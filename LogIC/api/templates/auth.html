@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block body %}
+<main>
+  <a class="back" href="{{ url_for('landing') }}" aria-label="Back to the introduction page">&lsaquo;</a>
+  <div class="auth">
+    {% set m = 'professor' if role == 'professor' else None %}
+    <div class="tabs">
+      <a href="{{ url_for('login', mode=m) }}" class="{{ 'on' if page == 'login' }}">LOG IN</a>
+      <a href="{{ url_for('signup', mode=m) }}" class="{{ 'on' if page == 'signup' }}">SIGN UP</a>
+    </div>
+    <div class="card">
+      <h2 style="margin-top:0">
+        {% if page == 'login' %}Welcome, {{ 'Professor' if role == 'professor' else 'TUPian' }}!{% else %}Create your account{% endif %}
+        {% if role == 'professor' %}<span class="badge">Professor</span>{% endif %}
+      </h2>
+      {% for msg in get_flashed_messages() %}<div class="flash" role="alert">{{ msg }}</div>{% endfor %}
+      <form method="post" action="{{ url_for(page, mode=m) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <label for="email">Email:</label>
+        <input id="email" name="email" type="email" required autocomplete="email">
+        <label for="password">Password:</label>
+        <input id="password" name="password" type="password" required minlength="{{ 8 if page == 'signup' else 1 }}" autocomplete="{{ 'new-password' if page == 'signup' else 'current-password' }}">
+        {% if page == 'signup' %}
+        <label for="confirm">Confirm password:</label>
+        <input id="confirm" name="confirm" type="password" required minlength="8" autocomplete="new-password">
+          {% if role == 'professor' %}
+          <label for="code">Professor access code:</label>
+          <input id="code" name="code" type="password" required>
+          {% endif %}
+        {% endif %}
+        <button class="btn" type="submit">{{ 'LOG IN' if page == 'login' else 'SIGN UP' }}</button>
+      </form>
+      {% if role == 'professor' %}
+        <a class="btn alt" href="{{ url_for(page) }}">Student mode</a>
+      {% else %}
+        <a class="btn alt" href="{{ url_for(page, mode='professor') }}">Professor mode</a>
+      {% endif %}
+    </div>
+  </div>
+</main>
+{% endblock %}

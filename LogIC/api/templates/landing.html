@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block body %}
+<main>
+  <section class="hero">
+    <div>
+      <h1>{{ app_name }}</h1>
+      <h2>{{ tagline }}</h2>
+      <p>Click the arrow to log in or create an account</p>
+    </div>
+    <a class="arrow" href="{{ url_for('login') }}" aria-label="Go to log in or sign up">&rsaquo;</a>
+  </section>
+</main>
+{% endblock %}

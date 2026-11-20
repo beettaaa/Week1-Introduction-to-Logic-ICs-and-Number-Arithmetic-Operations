@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block body %}
+<main>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <h1 style="margin:6px 0">{{ app_name }}
+      {% if session.role == 'professor' %}<span class="badge">Professor</span>{% endif %}</h1>
+    <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+      <button class="btn" style="margin:0;width:auto;padding:8px 16px" type="submit">Log out ({{ session.user }})</button>
+    </form>
+  </div>
+
+  <div class="tabs-app" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="ics">Logic circuit ICs</button>
+    <button role="tab" aria-selected="false" data-tab="conv">Number conversion</button>
+    <button role="tab" aria-selected="false" data-tab="arith">Arithmetic</button>
+  </div>
+
+  <section class="card" id="ics">
+    <h2 style="margin-top:0">Introduction to logic circuit ICs</h2>
+    <p>An integrated circuit (IC) packs several logic gates into one chip. The common 74xx (TTL) series chips below are all 14-pin: pin 14 is VCC (+5 V) and pin 7 is GND.</p>
+    <div class="scroll"><table>
+      <tr><th>IC</th><th>Gate</th><th>Gates per chip</th><th>Output</th></tr>
+      <tr><td>7404</td><td>NOT (inverter)</td><td>6</td><td>Y = A'</td></tr>
+      <tr><td>7408</td><td>AND</td><td>4</td><td>Y = A &middot; B</td></tr>
+      <tr><td>7432</td><td>OR</td><td>4</td><td>Y = A + B</td></tr>
+      <tr><td>7400</td><td>NAND</td><td>4</td><td>Y = (A &middot; B)'</td></tr>
+      <tr><td>7402</td><td>NOR</td><td>4</td><td>Y = (A + B)'</td></tr>
+      <tr><td>7486</td><td>XOR</td><td>4</td><td>Y = A &oplus; B</td></tr>
+    </table></div>
+    <h3>Truth tables (A, B &rarr; output)</h3>
+    <div class="scroll"><table>
+      <tr><th>A</th><th>B</th><th>AND</th><th>OR</th><th>NAND</th><th>NOR</th><th>XOR</th></tr>
+      <tr><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td></tr>
+      <tr><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+      <tr><td>1</td><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+      <tr><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+    </table></div>
+  </section>
+
+  <section class="card" id="conv" hidden>
+    <h2 style="margin-top:0">Number system conversion</h2>
+    <div class="row">
+      <div><label for="cv">Value</label><input id="cv" autocomplete="off" placeholder="e.g. 1011"></div>
+      <div><label for="cb">From base</label>
+        <select id="cb"><option value="2">Binary (2)</option><option value="8">Octal (8)</option><option value="10" selected>Decimal (10)</option><option value="16">Hexadecimal (16)</option></select></div>
+    </div>
+    <div id="cout" aria-live="polite"></div>
+  </section>
+
+  <section class="card" id="arith" hidden>
+    <h2 style="margin-top:0">Number system arithmetic</h2>
+    <div class="row">
+      <div><label for="a1">First number</label><input id="a1" autocomplete="off"></div>
+      <div><label for="ao">Operation</label>
+        <select id="ao"><option value="+">Add (+)</option><option value="-">Subtract (&minus;)</option><option value="*">Multiply (&times;)</option><option value="/">Divide (&divide;)</option></select></div>
+      <div><label for="a2">Second number</label><input id="a2" autocomplete="off"></div>
+      <div><label for="ab">Base</label>
+        <select id="ab"><option value="2">Binary (2)</option><option value="8">Octal (8)</option><option value="10" selected>Decimal (10)</option><option value="16">Hexadecimal (16)</option></select></div>
+    </div>
+    <div id="aout" aria-live="polite"></div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
