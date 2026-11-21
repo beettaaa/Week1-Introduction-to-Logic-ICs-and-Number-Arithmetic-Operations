@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="landing-main">
+  <section class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="eyebrow-dot"></span> DIGITAL LOGIC · NUMBER SYSTEMS</span>
+      <div class="hero-orbit" aria-hidden="true"><span>0</span><span>1</span><span>AND</span><span>OR</span><i></i></div>
+      <p class="hero-lead">Turn abstract logic into something you can see, understand, and use.</p>
+      <p class="hero-description">Explore the building blocks of digital electronics, discover how binary, octal, decimal, and hexadecimal connect, then put your understanding to work with interactive conversions and arithmetic.</p>
+      <div class="hero-meta">
+        <span><b>01</b> Understand logic gates</span>
+        <span><b>02</b> Convert with confidence</span>
+        <span><b>03</b> Calculate in any base</span>
+      </div>
+      <div class="hero-note"><span class="note-mark">🔒</span><span>Sign in to save your progress and access personalized learning paths by clicking the > button.</span></div>
+    </div>
+    <a class="arrow" href="{{ url_for('login') }}" aria-label="Continue to log in or create an account" title="Continue"><span aria-hidden="true">›</span></a>
+  </section>
+  <div class="landing-foot"><span>LEARN · EXPLORE · APPLY</span><span>FROM BOOLEAN LOGIC TO BINARY</span></div>
+</main>
+{% endblock %}

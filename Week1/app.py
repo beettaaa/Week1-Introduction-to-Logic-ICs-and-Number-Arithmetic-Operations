@@ -1,54 +1,60 @@
-"""NumaLogi - intro to logic circuit ICs and number system conversion/arithmetic.
-Run:  pip install -r requirements.txt  ->  python app.py  ->  open http://127.0.0.1:5000
-Needs a running MariaDB server (see the DB_* settings below).
-"""
-import os, re, secrets
+"""NumaLogi learning portal — Flask + MariaDB backend."""
+import os
+import re
+import secrets
+
 import pymysql
 import pymysql.cursors
 from flask import Flask, g, redirect, render_template, request, session, url_for, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
 APP_NAME = "NumaLogi"
-TAGLINE = "Welcome to the world of logic circuits and number conversion"
-PROFESSOR_CODE = os.environ.get("PROFESSOR_CODE", "TUP-ACTS-PROF")  # change this!
-
-# MariaDB connection settings (override with environment variables if needed)
+TAGLINE = "A hands-on space for digital logic and number systems."
+PROFESSOR_CODE = os.environ.get("PROFESSOR_CODE", "TUP-ACTS-PROF")
 DB_HOST = os.environ.get("DB_HOST", "localhost")
 DB_PORT = int(os.environ.get("DB_PORT", "3306"))
 DB_USER = os.environ.get("DB_USER", "bitgate_user")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "ChangeMe123!")  # change this!
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "ChangeMe123!")
 DB_NAME = os.environ.get("DB_NAME", "bitgate")
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 
-# ---------------------------------------------------------------- database
-def connect():
-    return pymysql.connect(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD,
-                           database=DB_NAME, charset="utf8mb4",
-                           cursorclass=pymysql.cursors.DictCursor)
+
+def connect(database=DB_NAME):
+    return pymysql.connect(
+        host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASSWORD,
+        database=database, charset="utf8mb4", autocommit=False,
+        cursorclass=pymysql.cursors.DictCursor, connect_timeout=5,
+    )
+
 
 def db():
     if "db" not in g:
         g.db = connect()
     return g.db
 
+
 def query_one(sql, args=()):
     with db().cursor() as cur:
         cur.execute(sql, args)
         return cur.fetchone()
 
+
 @app.teardown_appcontext
-def close_db(_):
+def close_db(_error):
     conn = g.pop("db", None)
     if conn:
         conn.close()
 
+
 def init_db():
+    """Create the application table; the database itself is created by schema.sql."""
     conn = connect()
     try:
         with conn.cursor() as cur:
-            cur.execute("""CREATE TABLE IF NOT EXISTS users(
+            cur.execute("""CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 email VARCHAR(255) NOT NULL UNIQUE,
                 password_hash VARCHAR(255) NOT NULL,
@@ -56,33 +62,42 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
-# ---------------------------------------------------------------- CSRF
+
 def csrf_token():
     if "csrf" not in session:
-        session["csrf"] = secrets.token_hex(16)
+        session["csrf"] = secrets.token_hex(24)
     return session["csrf"]
 
+
 app.jinja_env.globals["csrf_token"] = csrf_token
+
 
 @app.before_request
 def check_csrf():
     if request.method == "POST":
         sent = request.form.get("csrf", "")
-        if not sent or not secrets.compare_digest(sent, session.get("csrf", "")):
-            return "Invalid form token. Go back and reload the page.", 400
+        expected = session.get("csrf", "")
+        if not sent or not expected or not secrets.compare_digest(sent, expected):
+            return "Your form session has expired. Please go back, refresh, and try again.", 400
 
-# ---------------------------------------------------------------- routes
+
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
 
 def role_from_request():
     return "professor" if request.values.get("mode") == "professor" else "student"
 
+
 @app.route("/")
 def landing():
     return render_template("landing.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -95,9 +110,11 @@ def login():
             session.clear()
             session["user"] = row["email"]
             session["role"] = row["role"]
+            session["csrf"] = secrets.token_hex(24)
             return redirect(url_for("dashboard"))
-        flash("Wrong email or password.")
+        flash("Those details did not match an account. Check your email and password, then try again.", "error")
     return render_template("auth.html", page="login", role=role)
+
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -108,25 +125,35 @@ def signup():
         confirm = request.form.get("confirm", "")
         error = None
         if not EMAIL_RE.match(email):
-            error = "Enter a valid email address."
+            error = "Enter a valid email address so we can identify your account."
         elif len(password) < 8:
-            error = "Password must be at least 8 characters."
+            error = "Choose a password with at least 8 characters."
+        elif len(password) > 1024:
+            error = "Please choose a shorter password."
         elif password != confirm:
-            error = "Passwords do not match."
+            error = "Your passwords do not match. Please enter them again."
         elif role == "professor" and request.form.get("code", "") != PROFESSOR_CODE:
-            error = "Invalid professor access code."
+            error = "The professor access code is incorrect. Please check with your instructor."
         if not error:
             try:
                 with db().cursor() as cur:
-                    cur.execute("INSERT INTO users(email,password_hash,role) VALUES(%s,%s,%s)",
-                                (email, generate_password_hash(password), role))
+                    cur.execute(
+                        "INSERT INTO users(email,password_hash,role) VALUES(%s,%s,%s)",
+                        (email, generate_password_hash(password), role),
+                    )
                 db().commit()
-                flash("Account created. You can log in now.")
-                return redirect(url_for("login", mode="professor" if role == "professor" else None))
+                flash("Your account is ready. Sign in to begin exploring NumaLogi.", "success")
+                return redirect(url_for("login", **({"mode": "professor"} if role == "professor" else {})))
             except pymysql.err.IntegrityError:
-                error = "That email is already registered."
-        flash(error)
+                db().rollback()
+                error = "An account with that email already exists. Try signing in instead."
+            except Exception:
+                db().rollback()
+                app.logger.exception("Account creation failed")
+                error = "We couldn't create your account right now. Please try again in a moment."
+        flash(error, "error")
     return render_template("auth.html", page="signup", role=role)
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -134,18 +161,22 @@ def dashboard():
         return redirect(url_for("login"))
     return render_template("dashboard.html")
 
+
 @app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     return redirect(url_for("landing"))
 
+
 app.jinja_env.globals.update(app_name=APP_NAME, tagline=TAGLINE)
 
-try:
-    init_db()
-except pymysql.err.OperationalError as e:
-    raise SystemExit("Cannot connect to MariaDB: %s\nCheck that the server is running and the "
-                     "DB_HOST / DB_USER / DB_PASSWORD / DB_NAME settings in app.py are correct." % (e,))
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    try:
+        init_db()
+    except pymysql.err.OperationalError as exc:
+        raise SystemExit(
+            "Cannot connect to MariaDB. Start MariaDB, run schema.sql using an administrator "
+            "account, then verify DB_HOST, DB_PORT, DB_USER, DB_PASSWORD and DB_NAME.\n"
+            f"Database details: {exc}"
+        )
+    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)

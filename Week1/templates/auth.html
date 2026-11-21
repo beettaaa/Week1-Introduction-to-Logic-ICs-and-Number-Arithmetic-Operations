@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="auth-main">
+  <a class="back" href="{{ url_for('landing') }}" aria-label="Return to the introduction" title="Back to introduction"><span aria-hidden="true">‹</span></a>
+  <div class="auth">
+    {% set m = 'professor' if role == 'professor' else None %}
+    <div class="tabs" aria-label="Account options">
+      <a href="{{ url_for('login', mode=m) }}" class="{{ 'on' if page == 'login' }}">LOG IN</a>
+      <a href="{{ url_for('signup', mode=m) }}" class="{{ 'on' if page == 'signup' }}">SIGN UP</a>
+    </div>
+    <div class="card auth-card">
+      <div class="auth-kicker">YOUR LEARNING SPACE</div>
+      <h2>{% if page == 'login' %}Good to have you back.{% else %}Start your learning journey.{% endif %}
+        {% if role == 'professor' %}<span class="badge">Professor</span>{% endif %}</h2>
+      <p class="auth-subtitle">{% if page == 'login' %}Sign in to pick up where curiosity left off and continue exploring digital logic.{% else %}Create your account to access logic circuit references, number converters, and practice tools.{% endif %}</p>
+      {% for category, msg in get_flashed_messages(with_categories=true) %}<div class="flash {{ category }}" role="alert">{{ msg }}</div>{% endfor %}
+      <form method="post" action="{{ url_for(page, mode=m) }}">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" required autocomplete="email" placeholder="name@example.com">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required minlength="{{ 8 if page == 'signup' else 1 }}" autocomplete="{{ 'new-password' if page == 'signup' else 'current-password' }}" placeholder="{{ 'Create a secure password' if page == 'signup' else 'Enter your password' }}">
+        {% if page == 'signup' %}
+        <label for="confirm">Confirm password</label>
+        <input id="confirm" name="confirm" type="password" required minlength="8" autocomplete="new-password" placeholder="Enter your password once more">
+          {% if role == 'professor' %}
+          <label for="code">Professor access code</label>
+          <input id="code" name="code" type="password" required placeholder="Provided by your administrator">
+          {% endif %}
+        {% endif %}
+        <button class="btn" type="submit">{{ 'ENTER YOUR LEARNING SPACE' if page == 'login' else 'CREATE MY ACCOUNT' }} <span aria-hidden="true">→</span></button>
+      </form>
+      <div class="mode-divider"><span>ACCOUNT TYPE</span></div>
+      {% if role == 'professor' %}
+        <a class="btn alt" href="{{ url_for(page) }}">Continue as a student</a>
+      {% else %}
+        <a class="btn alt" href="{{ url_for(page, mode='professor') }}">Access professor mode <span aria-hidden="true">↗</span></a>
+      {% endif %}
+    </div>
+    <p class="auth-note">Every great circuit begins with a single connection.</p>
+  </div>
+</main>
+{% endblock %}

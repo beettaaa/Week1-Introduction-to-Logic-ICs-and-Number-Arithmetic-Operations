@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#064e3b">
+<title>Digital Logic Learning Space</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")||"dark";}catch(e){document.documentElement.dataset.theme="dark";}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="ambient ambient-one" aria-hidden="true"></div>
+<div class="ambient ambient-two" aria-hidden="true"></div>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('landing') }}" aria-label="NumaLogi home">
+    <div class="logos">
+      <div class="logo" title="TUP"><img src="{{ url_for('static', filename='img/tup.png') }}" alt="TUP" onerror="this.replaceWith(document.createTextNode('TUP'))"></div>
+      <div class="logo" title="ACTS"><img src="{{ url_for('static', filename='img/acts.png') }}" alt="ACTS" onerror="this.replaceWith(document.createTextNode('ACTS'))"></div>
+    </div>
+  </a>
+  <button class="icon-btn" id="themeBtn" aria-label="Toggle dark or light theme" title="Toggle theme">&#9681;</button>
+</header>
+{% block body %}{% endblock %}
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body></html>
